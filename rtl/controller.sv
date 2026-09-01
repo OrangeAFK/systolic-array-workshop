@@ -62,12 +62,12 @@ module controller #(
                 b_drv[i] <= '0;
             end
         end else begin
-            done      <= 1'b0;
             clear_acc <= 1'b0;
 
             case (state)
                 ST_IDLE: begin
                     if (start) begin
+                        done      <= 1'b0;
                         clear_acc <= 1'b1;
                         state     <= ST_CLEAR;
                     end
