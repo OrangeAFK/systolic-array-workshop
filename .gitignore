@@ -1,0 +1,24 @@
+# Simulation build artifacts
+sim/obj/
+sim/*.vcd
+
+# Generated test vectors and results
+tb/test_vectors/*.json
+tb/test_vectors/*.hex
+!tb/test_vectors/.gitkeep
+
+# Vivado / FPGA build artifacts
+fpga/project/
+fpga/*.bit
+fpga/*.hwh
+fpga/*.xsa
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Editor / OS
+.vscode/
+.DS_Store
+Thumbs.db
