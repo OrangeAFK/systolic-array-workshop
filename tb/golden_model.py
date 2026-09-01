@@ -16,6 +16,7 @@ DATA_LO = -8
 DATA_HI = 7
 VECTORS_DIR = Path(__file__).parent / "test_vectors"
 MANIFEST_PATH = VECTORS_DIR / "manifest.json"
+MANIFEST_LIST = VECTORS_DIR / "manifest.list"
 RESULTS_PATH = VECTORS_DIR / "results.json"
 
 
@@ -27,8 +28,21 @@ def golden(A: np.ndarray, B: np.ndarray) -> np.ndarray:
 
 
 def matrix_to_list(m: np.ndarray) -> list[list[int]]:
-    """Convert a 4x4 numpy array to a nested Python list for JSON."""
+    """Convert a 4x4 numpy array to a nested Python list."""
     return m.astype(int).tolist()
+
+
+def write_case_file(case: dict[str, Any], directory: Path) -> None:
+    """Write a single test case in a simple text format for SV $fscanf."""
+    path = directory / f"{case['name']}.txt"
+    with path.open("w", encoding="utf-8") as f:
+        f.write(f"name {case['name']}\n")
+        f.write("A\n")
+        for row in case["A"]:
+            f.write(" ".join(str(v) for v in row) + "\n")
+        f.write("B\n")
+        for row in case["B"]:
+            f.write(" ".join(str(v) for v in row) + "\n")
 
 
 def generate_random_tests(n: int = 100, lo: int = DATA_LO, hi: int = DATA_HI) -> list[dict[str, Any]]:
@@ -37,12 +51,11 @@ def generate_random_tests(n: int = 100, lo: int = DATA_LO, hi: int = DATA_HI) ->
     for i in range(n):
         A = np.random.randint(lo, hi + 1, size=(N, N), dtype=np.int32)
         B = np.random.randint(lo, hi + 1, size=(N, N), dtype=np.int32)
-        C = golden(A, B)
         cases.append({
             "name": f"random_{i:03d}",
             "A": matrix_to_list(A),
             "B": matrix_to_list(B),
-            "C": matrix_to_list(C),
+            "C": matrix_to_list(golden(A, B)),
         })
     return cases
 
@@ -76,12 +89,19 @@ def edge_cases() -> list[dict[str, Any]]:
     return cases
 
 
-def write_manifest(cases: list[dict[str, Any]], path: Path = MANIFEST_PATH) -> None:
-    """Write test case manifest for the SystemVerilog testbench."""
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w", encoding="utf-8") as f:
+def write_manifest(cases: list[dict[str, Any]]) -> None:
+    """Write JSON manifest and per-case text files for the SV testbench."""
+    VECTORS_DIR.mkdir(parents=True, exist_ok=True)
+
+    with MANIFEST_PATH.open("w", encoding="utf-8") as f:
         json.dump({"N": N, "cases": cases}, f, indent=2)
-    print(f"Wrote {len(cases)} test cases to {path}")
+
+    with MANIFEST_LIST.open("w", encoding="utf-8", newline="\n") as f:
+        for case in cases:
+            f.write(f"{case['name']}\n")
+            write_case_file(case, VECTORS_DIR)
+
+    print(f"Wrote {len(cases)} test cases to {VECTORS_DIR}")
 
 
 def read_results(path: Path = RESULTS_PATH) -> list[dict[str, Any]]:
@@ -91,11 +111,11 @@ def read_results(path: Path = RESULTS_PATH) -> list[dict[str, Any]]:
     return data["results"]
 
 
-def check_results(manifest_path: Path = MANIFEST_PATH, results_path: Path = RESULTS_PATH) -> int:
+def check_results() -> int:
     """Compare RTL results against golden model. Returns number of failures."""
-    with manifest_path.open(encoding="utf-8") as f:
+    with MANIFEST_PATH.open(encoding="utf-8") as f:
         manifest = json.load(f)
-    results = read_results(results_path)
+    results = read_results()
 
     expected_by_name = {c["name"]: np.array(c["C"], dtype=np.int32) for c in manifest["cases"]}
     failures = 0
@@ -117,10 +137,6 @@ def check_results(manifest_path: Path = MANIFEST_PATH, results_path: Path = RESU
             print(f"FAIL [{name}]:")
             print(f"  Expected:\n{expected}")
             print(f"  Actual:\n{actual}")
-            diff = np.argwhere(actual != expected)
-            for idx in diff[:3]:
-                i, j = idx
-                print(f"  Mismatch at [{i}][{j}]: got {actual[i,j]}, expected {expected[i,j]}")
 
     total = len(results)
     passed = total - failures
