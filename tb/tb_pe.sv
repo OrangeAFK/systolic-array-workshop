@@ -4,12 +4,13 @@
 // Feeds a = [2, 3, 4] and b = [5, 6, 7] over 3 cycles.
 // Expected accumulator result: 2*5 + 3*6 + 4*7 = 56
 
-module tb_pe;
+module tb_pe (
+    input logic clk
+);
 
     localparam int DATA_W = 8;
     localparam int ACC_W  = 32;
 
-    logic                  clk;
     logic                  rst;
     logic signed [DATA_W-1:0] a_in;
     logic signed [DATA_W-1:0] b_in;
@@ -30,10 +31,7 @@ module tb_pe;
         .acc  (acc)
     );
 
-    // 10 ns clock period
-    initial clk = 0;
-    always #5 clk = ~clk;
-
+    // Clock driven from C++ main (Verilator-compatible)
     logic signed [DATA_W-1:0] a_vals [3];
     logic signed [DATA_W-1:0] b_vals [3];
     int errors;
