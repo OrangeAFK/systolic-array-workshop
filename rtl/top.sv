@@ -20,10 +20,6 @@ module top #(
     logic signed [DATA_W-1:0] a_drv [N];
     logic signed [DATA_W-1:0] b_drv [N];
 
-    // Matrices are driven directly from load ports (stable before start pulse)
-    wire signed [DATA_W-1:0] a_mem [N][N] = a_load;
-    wire signed [DATA_W-1:0] b_mem [N][N] = b_load;
-
     controller #(
         .N     (N),
         .DATA_W(DATA_W)
@@ -35,8 +31,8 @@ module top #(
         .clear_acc(clear_acc),
         .a_drv    (a_drv),
         .b_drv    (b_drv),
-        .a_mem    (a_mem),
-        .b_mem    (b_mem)
+        .a_mem    (a_load),
+        .b_mem    (b_load)
     );
 
     systolic_array_4x4 #(
