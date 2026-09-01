@@ -1,5 +1,7 @@
 `timescale 1ns / 1ps
 
+/* verilator lint_off DECLFILENAME */
+
 // 4x4 systolic array for matrix multiply C = A * B.
 // A flows left-to-right; B flows top-to-bottom.
 // Each PE[i][j] accumulates C[i][j].
