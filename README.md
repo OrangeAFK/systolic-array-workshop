@@ -132,13 +132,7 @@ state ─────────►│ SSM recurrence  │
 
 > **The systolic array is the compute substrate. StreamState is the system architecture built around that substrate.**
 
-When you finish this workshop, you will understand *why* StreamState needs a matrix engine — and what that engine actually does at the cycle level.
-
----
-
-## Naming Note
-
-This design is called **`systolic_array_4x4`**, not a "TPU." A 4×4 educational array teaches the underlying architecture. Production TPUs are large-scale systems built around related systolic-array and dataflow ideas — but they are not the same thing.
+When you finish this workshop, you will understand *why* StreamState needs a matrix engine, and what that engine actually does at the cycle level.
 
 ---
 
