@@ -62,6 +62,17 @@ Used by the array TB; `systolic_core` wraps this shell.
 
 ---
 
+## Integration boundary (SoC / TPU vs Cora demo)
+
+| Use this | When |
+|----------|------|
+| **`systolic_core`** (AXIS `w_*` / `a_*` / `c_*` + `start` / `done`) | Drop-in for a TPU / SoC / StreamState — DMA or NoC feeds streams |
+| **`axi_wrapper` + block design** | Cora Z7 workshop demo only — AXI-Lite MMIO adapter around the core |
+
+Do **not** treat AXI-Lite as the long-term SoC API. Swap the shell; keep this core contract.
+
+---
+
 ## `systolic_core` — TPU drop-in (AXIS)
 
 ```text
@@ -109,7 +120,9 @@ Base address on Cora Z7: `0x43C0_0000`.
 | `0x90..` | C_MEM | R | `N*N` int32 results, word-aligned |
 
 **AXI-Lite rules:**
+- Address width 16 bits (64 KiB map); register offsets unchanged.
+- Ports include `s_axi_awprot` / `s_axi_arprot` (ignored) for Vivado BD inference.
 - AW and W may arrive on different cycles; slave must accept both orders (AW-then-W and W-then-AW).
 - Instantiates `systolic_core`; MMIO fills weight/activation buffers and polls `done`.
 
-Align host script (`fpga/demo_host.py`) with this map.
+Host: [`fpga/demo_host.py`](../fpga/demo_host.py) — `/dev/mem` mmap at `0x43C0_0000`, or `--simulate`.
