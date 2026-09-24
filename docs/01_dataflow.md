@@ -31,7 +31,7 @@ Showing which matrix elements enter the array edges at each cycle:
 | ... | ... | ... | ... | ... | ... | ... | ... | ... |
 | 9 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | B[3][3] |
 
-Total compute cycles: **3N − 2 = 10** for N=4.
+Total injection window: **3N − 2 = 10** cycles for N=4, plus **one flush cycle** with `pe_en` still high and zeros at the edges so in-flight operands finish propagating before `pe_en` drops.
 
 ## Propagation Through the Mesh
 
@@ -57,7 +57,7 @@ Look for:
 1. Operands entering the left column and top row with skew
 2. Values propagating horizontally and vertically through the mesh
 3. Accumulators in each PE growing over 4 cycles
-4. `done` asserting after cycle 10
+4. `done` asserting after the run+flush window; `pe_en` low afterward so accumulators hold
 
 ## Streaming Interface (Exercise 3)
 

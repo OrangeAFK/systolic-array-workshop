@@ -1,114 +1,73 @@
 # Verification
 
-This workshop treats verification as an engineering discipline, not an afterthought.
+Verification is test-driven: **lock contract → failing TB → RTL → green gate → next layer.**
 
-## The Workflow
+## Contracts
+
+Executable interface rules live in [`docs/contracts.md`](contracts.md) and in TB headers. Do not change MMIO offsets or AXIS ordering without updating TBs and `fpga/demo_host.py`.
+
+## Workflow
 
 ```text
-specification
+contracts.md
      ↓
-golden model (Python)
+failing SystemVerilog TB
      ↓
-RTL (SystemVerilog)
+minimum RTL to pass
      ↓
-simulation (Verilator)
+Verilator (make -C sim …)
      ↓
-hardware (Cora Z7 FPGA)
+golden_model.py check (array suite)
      ↓
-hardware-vs-golden comparison
+(only then) Vivado / Cora Z7
 ```
 
 ## Golden Model
-
-The reference implementation is intentionally simple:
 
 ```python
 def golden(A, B):
     return A.astype(np.int8).astype(np.int32) @ B.astype(np.int8).astype(np.int32)
 ```
 
-This is `numpy` matrix multiply with int8 operands and int32 accumulation — matching the RTL semantics.
-
 ## Randomized Testing
 
-We do **not** rely on a single hard-coded test case. The golden model generates:
-
-- **100 random** 4×4 int8 matrices (values in [-8, 7])
-- **8 edge cases**: zeros, ones, identity, max positive, max negative, mixed signs, sparse, fixed small
-
 ```bash
 python tb/golden_model.py generate --random 100
 ```
 
-This writes:
-- `tb/test_vectors/manifest.json` — full test spec with expected results
-- `tb/test_vectors/manifest.list` — case names for the SV testbench
-- `tb/test_vectors/<name>.txt` — per-case A/B matrices in simple text format
+Produces `tb/test_vectors/manifest.list`, per-case `.txt` files, and expected `C` in `manifest.json`.
 
-## Running Verification
+## Simulation Targets
 
 ```bash
-# Full flow
 ./scripts/run_sim.sh
-
-# Or step by step:
-python tb/golden_model.py generate --random 100
-make -C sim pe       # Stage 1
-make -C sim array    # Stage 2 (identity test)
-make -C sim all      # Stage 3 (all cases)
+# or:
+make -C sim pe       # PE en/clear/hold
+make -C sim array    # identity + post-done stability
+make -C sim all      # full manifest → results.json
 python tb/golden_model.py check
+make -C sim stream   # systolic_core AXIS (backpressure, double-run, …)
+make -C sim axi      # axi_wrapper Lite BFM (split AW/W, STATUS bits)
 ```
 
-The SystemVerilog testbench:
-1. Reads test vectors from `tb/test_vectors/`
-2. Drives the RTL through load → compute → readback
-3. Writes `tb/test_vectors/results.json`
+### What each TB proves
 
-Python compares `results.json` against the golden model and prints PASS/FAIL per case.
+| TB | Key checks |
+|----|------------|
+| `tb_pe` | MAC when `en=1`; hold when `en=0`; `clear` zeros acc; idle stuck inputs |
+| `tb_systolic_array` | Golden matmul; `pe_en` low after done; `c_out` stable over idle |
+| `tb_systolic_core` | W then A streams; explicit start; `c_tready` stall; bubbles; double-run; sticky done |
+| `tb_axi_wrapper` | AW-then-W and W-then-AW; CTRL/STATUS; soft clear; C_MEM vs golden |
 
-## Reading Waveforms
-
-Generate a waveform for the pipeline timing lesson:
+## Waveforms
 
 ```bash
 make -C sim array
-# Open sim/obj/array/*.vcd in GTKWave or Surfer
+# Open sim/obj/array/*.vcd
 ```
 
-Signals to inspect:
-- `dut.u_controller.cycle` — injection cycle counter
-- `dut.u_controller.a_drv` / `b_drv` — skewed operands
-- `dut.u_array.c_out` — accumulator values growing over time
-- `done` — completion flag
-
-See [`docs/01_dataflow.md`](01_dataflow.md) for the cycle-by-cycle schedule.
-
-## What a Failing Test Looks Like
-
-```text
-FAIL [mixed_sign]:
-  Expected:
-[[  8 -32  18 -20]
- [ 34 -14  26 -30]
- ...
-  Actual:
-[[  8 -32  18 -20]
- [ 34 -14  25 -30]
- ...
-```
-
-The mismatch index tells you exactly which PE or cycle to investigate.
+Inspect `dut.u_controller.pe_en`, `a_drv`/`b_drv`, and PE `acc`.
 
 ## FPGA Verification
 
-On the Cora Z7, the host script (`fpga/demo_host.py`) performs the same comparison:
-
-```text
-Software:
-[[...]]
-FPGA:
-[[...]]
-PASS ✓
-```
-
-Same golden model, different execution target — that's the industrial verification pattern.
+After sim is green, build with `scripts/run_synth.tcl` and compare on hardware (or `--simulate`) via `fpga/demo_host.py` using the same golden model.
