@@ -20,4 +20,10 @@ make -C sim all
 echo "==> Checking results against golden model"
 python3 tb/golden_model.py check 2>/dev/null || python tb/golden_model.py check
 
+echo "==> Stage 4: systolic_core stream test"
+make -C sim stream
+
+echo "==> Stage 5: axi_wrapper Lite test"
+make -C sim axi
+
 echo "==> All stages passed"
