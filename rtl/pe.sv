@@ -20,7 +20,7 @@ module pe #(
     output logic signed [ACC_W-1:0]  acc
 );
 
-    logic signed [ACC_W-1:0] product;
+    (* use_dsp = "yes" *) logic signed [ACC_W-1:0] product;
 
     assign product = $signed(a_in) * $signed(b_in);
 

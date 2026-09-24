@@ -10,5 +10,5 @@ set_property BITSTREAM.GENERAL.COMPRESS TRUE [current_design]
 set_property CFGBVS VCCO [current_design]
 set_property CONFIG_VOLTAGE 3.3 [current_design]
 
-## False paths / multicycle: none for int8×int8→int32 PE at 125 MHz.
+## False paths / multicycle: none for int8×int8→int32 PE at 100 MHz.
 ## Do NOT apply multicycle on hierarchical *acc* registers.

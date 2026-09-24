@@ -23,13 +23,13 @@ apply_bd_automation -rule xilinx.com:bd_rule:processing_system7 \
 
 set_property -dict [list \
     CONFIG.PCW_USE_M_AXI_GP0 {1} \
-    CONFIG.PCW_FPGA0_PERIPHERAL_FREQMHZ {125} \
+    CONFIG.PCW_FPGA0_PERIPHERAL_FREQMHZ {100} \
 ] [get_bd_cells processing_system7_0]
 
 # -------------------------------------------------------------------------
 # Clock / reset for PL
 # -------------------------------------------------------------------------
-create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset:5.0 rst_ps7_0_125M
+create_bd_cell -type ip -vlnv xilinx.com:ip:proc_sys_reset:5.0 rst_ps7_0_100M
 
 create_bd_cell -type ip -vlnv xilinx.com:ip:axi_interconnect:2.1 axi_interconnect_0
 set_property -dict [list CONFIG.NUM_MI {1}] [get_bd_cells axi_interconnect_0]
@@ -57,23 +57,23 @@ if {$axi_pin eq ""} {
 connect_bd_intf_net [get_bd_intf_pins axi_interconnect_0/M00_AXI] \
     [get_bd_intf_pins axi_wrapper_0/$axi_pin]
 
-# FCLK 125 MHz
+# FCLK 100 MHz
 connect_bd_net [get_bd_pins processing_system7_0/FCLK_CLK0] \
     [get_bd_pins processing_system7_0/M_AXI_GP0_ACLK] \
     [get_bd_pins axi_interconnect_0/ACLK] \
     [get_bd_pins axi_interconnect_0/S00_ACLK] \
     [get_bd_pins axi_interconnect_0/M00_ACLK] \
     [get_bd_pins axi_wrapper_0/s_axi_aclk] \
-    [get_bd_pins rst_ps7_0_125M/slowest_sync_clk]
+    [get_bd_pins rst_ps7_0_100M/slowest_sync_clk]
 
 # PS reset into proc_sys_reset
 connect_bd_net [get_bd_pins processing_system7_0/FCLK_RESET0_N] \
-    [get_bd_pins rst_ps7_0_125M/ext_reset_in]
+    [get_bd_pins rst_ps7_0_100M/ext_reset_in]
 
 # Interconnect / peripheral resets from proc_sys_reset
-connect_bd_net [get_bd_pins rst_ps7_0_125M/interconnect_aresetn] \
+connect_bd_net [get_bd_pins rst_ps7_0_100M/interconnect_aresetn] \
     [get_bd_pins axi_interconnect_0/ARESETN]
-connect_bd_net [get_bd_pins rst_ps7_0_125M/peripheral_aresetn] \
+connect_bd_net [get_bd_pins rst_ps7_0_100M/peripheral_aresetn] \
     [get_bd_pins axi_interconnect_0/S00_ARESETN] \
     [get_bd_pins axi_interconnect_0/M00_ARESETN] \
     [get_bd_pins axi_wrapper_0/s_axi_aresetn]
@@ -106,4 +106,4 @@ regenerate_bd_layout
 validate_bd_design
 save_bd_design
 
-puts "Block design '$design_name' ready: PS GP0 → axi_wrapper_bd @ 0x43C0_0000 (125 MHz)"
+puts "Block design '$design_name' ready: PS GP0 → axi_wrapper_bd @ 0x43C0_0000 (100 MHz)"

@@ -18,7 +18,7 @@ See [`docs/contracts.md`](../docs/contracts.md).
 | Part | XC7Z007S-1CLG400C |
 | Board part | `digilentinc.com:cora-z7-07s:part0:1.1` |
 | Board files | `C:/Xilinx/vivado-boards/new/board_files` |
-| PL clock | 125 MHz (`FCLK_CLK0`) |
+| PL clock | 100 MHz (`FCLK_CLK0`) |
 | AXI base | `0x43C0_0000` (64 KiB) |
 
 ## Prerequisites
@@ -46,13 +46,17 @@ This:
 5. Writes `fpga/project/utilization_synth.rpt`, `timing.rpt`
 6. Regenerates `fpga/program.tcl`
 
-### Expected utilization (fill after first successful build)
+### Measured utilization / timing (Vivado 2025.1)
 
-| Resource | Expectation |
-|----------|-------------|
-| DSP48E1 | ~16 |
-| LUTs / FFs | control + AXI shim |
-| WNS @ 125 MHz | ≥ 0 |
+| Resource | Result |
+|----------|--------|
+| DSP48E1 | **16** (one per PE; `use_dsp` on multiply) |
+| Slice LUTs | ~2.9k (synth; see `fpga/project/utilization_synth.rpt`) |
+| Slice Registers | ~2.5k |
+| FCLK | **100 MHz** |
+| WNS | **+2.317 ns** (constraints met) |
+
+Note: A first pass at 125 MHz with LUT multipliers missed timing by ~0.12 ns; 100 MHz + DSP mapping closes cleanly.
 
 ## Program
 
@@ -102,4 +106,4 @@ Zynq PS ── GP0 ── axi_interconnect ── axi_wrapper_bd ── axi_wrap
 | Board part missing | Install Digilent board files; check `board.repoPaths` in `run_synth.tcl` |
 | `/dev/mem` PermissionError | `sudo python3 fpga/demo_host.py` |
 | Sim not green | Do not run Vivado until `pe`/`array`/`stream`/`axi` pass |
-| Timing fail @ 125 MHz | Inspect `fpga/project/timing.rpt`; lower `PCW_FPGA0_PERIPHERAL_FREQMHZ` if needed |
+| Timing fail | Inspect `fpga/project/timing.rpt`; design targets **100 MHz** FCLK |
