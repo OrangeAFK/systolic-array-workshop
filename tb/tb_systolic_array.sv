@@ -81,6 +81,7 @@ module tb_systolic_array (
     task automatic run_one_case(input int ci, input string cname);
         int timeout;
         int i, j;
+        logic signed [ACC_W-1:0] c_snap [N][N];
 
         @(posedge clk);
         start = 1;
@@ -97,9 +98,33 @@ module tb_systolic_array (
             $display("FAIL [%s]: timeout", cname);
             errors++;
         end else begin
+            // pe_en must be low after done (contract: hold, no further MAC)
+            if (dut.u_controller.pe_en !== 1'b0) begin
+                $display("FAIL [%s]: pe_en still high after done", cname);
+                errors++;
+            end
+
+            for (i = 0; i < N; i++)
+                for (j = 0; j < N; j++) begin
+                    c_results[ci][i][j] = c_out[i][j];
+                    c_snap[i][j] = c_out[i][j];
+                end
+
+            // Post-done stability: many idle cycles, then re-read unchanged
+            repeat (20) @(posedge clk);
+            if (dut.u_controller.pe_en !== 1'b0) begin
+                $display("FAIL [%s]: pe_en rose during idle", cname);
+                errors++;
+            end
             for (i = 0; i < N; i++)
                 for (j = 0; j < N; j++)
-                    c_results[ci][i][j] = c_out[i][j];
+                    if (c_out[i][j] !== c_snap[i][j]) begin
+                        $display("FAIL [%s]: c_out[%0d][%0d] changed after idle (%0d -> %0d)",
+                                 cname, i, j, c_snap[i][j], c_out[i][j]);
+                        errors++;
+                    end
+
+            $display("PASS [%s]: done + stability", cname);
         end
     endtask
 

@@ -21,7 +21,11 @@ pip install -r requirements.txt
 make -C sim pe      # Stage 1: processing element
 make -C sim array   # Stage 2: 4×4 array (fixed test)
 make -C sim all     # Stage 3: randomized tests
+make -C sim stream  # Stage 4: systolic_core AXIS
+make -C sim axi     # Stage 5: axi_wrapper Lite
 ```
+
+**SoC / TPU drop-in:** integrate [`rtl/systolic_core.sv`](rtl/systolic_core.sv) (AXIS). The Cora path (`axi_wrapper` + BD) is a demo adapter only — see [`docs/contracts.md`](docs/contracts.md) and [`fpga/README.md`](fpga/README.md).
 
 To use your exercise solution instead of the reference:
 
