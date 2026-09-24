@@ -2,16 +2,18 @@
 
 /* verilator lint_off DECLFILENAME */
 
-// 4x4 systolic array for matrix multiply C = A * B.
+// N×N systolic array for matrix multiply C = A * B.
 // A flows left-to-right; B flows top-to-bottom.
 // Each PE[i][j] accumulates C[i][j].
-module systolic_array_4x4 #(
+// Contract: en broadcasts to PEs; clear_acc maps to PE clear (not rst).
+module systolic_array #(
     parameter int N      = 4,
     parameter int DATA_W = 8,
     parameter int ACC_W  = 32
 ) (
     input  logic                  clk,
     input  logic                  rst,
+    input  logic                  en,
     input  logic                  clear_acc,
     input  logic signed [DATA_W-1:0] a_in  [N],
     input  logic signed [DATA_W-1:0] b_in  [N],
@@ -34,7 +36,7 @@ module systolic_array_4x4 #(
         end
     endgenerate
 
-    // 4x4 mesh of processing elements
+    // N×N mesh of processing elements
     generate
         for (gi = 0; gi < N; gi++) begin : row
             for (gj = 0; gj < N; gj++) begin : col
@@ -43,7 +45,9 @@ module systolic_array_4x4 #(
                     .ACC_W (ACC_W)
                 ) pe_inst (
                     .clk  (clk),
-                    .rst  (rst | clear_acc),
+                    .rst  (rst),
+                    .en   (en),
+                    .clear(clear_acc),
                     .a_in (a_wire[gi][gj]),
                     .b_in (b_wire[gi][gj]),
                     .a_out(a_wire[gi][gj+1]),

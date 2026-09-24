@@ -1,6 +1,6 @@
 `timescale 1ns / 1ps
 
-// Top-level module: controller + systolic_array_4x4.
+// Top-level module: controller + systolic_array.
 // Flat memory interface for testbench and FPGA wrapper.
 module top #(
     parameter int N      = 4,
@@ -17,6 +17,7 @@ module top #(
 );
 
     logic                  clear_acc;
+    logic                  pe_en;
     logic signed [DATA_W-1:0] a_drv [N];
     logic signed [DATA_W-1:0] b_drv [N];
 
@@ -29,19 +30,21 @@ module top #(
         .start    (start),
         .done     (done),
         .clear_acc(clear_acc),
+        .pe_en    (pe_en),
         .a_drv    (a_drv),
         .b_drv    (b_drv),
         .a_mem    (a_load),
         .b_mem    (b_load)
     );
 
-    systolic_array_4x4 #(
+    systolic_array #(
         .N     (N),
         .DATA_W(DATA_W),
         .ACC_W (ACC_W)
     ) u_array (
         .clk      (clk),
         .rst      (rst),
+        .en       (pe_en),
         .clear_acc(clear_acc),
         .a_in     (a_drv),
         .b_in     (b_drv),

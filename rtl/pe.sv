@@ -4,12 +4,15 @@
 // int8 operands, int32 accumulator.
 // A flows through horizontally (a_in -> a_out).
 // B flows through vertically   (b_in -> b_out).
+// Contract: docs/contracts.md — en hold, clear, idle no-MAC.
 module pe #(
     parameter int DATA_W = 8,
     parameter int ACC_W  = 32
 ) (
     input  logic                  clk,
     input  logic                  rst,
+    input  logic                  en,
+    input  logic                  clear,
     input  logic signed [DATA_W-1:0] a_in,
     input  logic signed [DATA_W-1:0] b_in,
     output logic signed [DATA_W-1:0] a_out,
@@ -21,15 +24,23 @@ module pe #(
 
     assign product = $signed(a_in) * $signed(b_in);
 
+    // Priority: rst → clear → en MAC → hold
     always_ff @(posedge clk) begin
         if (rst) begin
             a_out <= '0;
             b_out <= '0;
             acc   <= '0;
         end else begin
-            a_out <= a_in;
-            b_out <= b_in;
-            acc   <= acc + product;
+            if (clear)
+                acc <= '0;
+            else if (en)
+                acc <= acc + product;
+
+            if (en) begin
+                a_out <= a_in;
+                b_out <= b_in;
+            end
+            // else hold a_out / b_out
         end
     end
 

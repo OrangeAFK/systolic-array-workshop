@@ -4,6 +4,7 @@
 // Skew schedule (see docs/01_dataflow.md):
 //   A[i][k] enters row i at cycle (i + k)
 //   B[k][j] enters col j at cycle (k + j)
+// Contract: pe_en only in ST_RUN; a_drv/b_drv zero outside run; done sticky.
 module controller #(
     parameter int N      = 4,
     parameter int DATA_W = 8
@@ -13,13 +14,17 @@ module controller #(
     input  logic                  start,
     output logic                  done,
     output logic                  clear_acc,
+    output logic                  pe_en,
     output logic signed [DATA_W-1:0] a_drv [N],
     output logic signed [DATA_W-1:0] b_drv [N],
     input  logic signed [DATA_W-1:0] a_mem [N][N],
     input  logic signed [DATA_W-1:0] b_mem [N][N]
 );
 
-    localparam int TOTAL_CYCLES = 3 * N - 2;
+    // Injection window is 3*N-2; +1 flush cycle lets in-flight operands
+    // finish propagating while pe_en is still high (zeros at the edges).
+    localparam int INJECT_CYCLES = 3 * N - 2;
+    localparam int TOTAL_CYCLES  = INJECT_CYCLES + 1;
 
     typedef enum logic [1:0] {
         ST_IDLE,
@@ -51,6 +56,8 @@ module controller #(
         end
     end
 
+    assign pe_en = (state == ST_RUN);
+
     always_ff @(posedge clk) begin
         if (rst) begin
             state     <= ST_IDLE;
@@ -66,6 +73,11 @@ module controller #(
 
             case (state)
                 ST_IDLE: begin
+                    // Zero drives outside run
+                    for (int i = 0; i < N; i++) begin
+                        a_drv[i] <= '0;
+                        b_drv[i] <= '0;
+                    end
                     if (start) begin
                         done      <= 1'b0;
                         clear_acc <= 1'b1;
@@ -74,6 +86,10 @@ module controller #(
                 end
 
                 ST_CLEAR: begin
+                    for (int i = 0; i < N; i++) begin
+                        a_drv[i] <= '0;
+                        b_drv[i] <= '0;
+                    end
                     state <= ST_RUN;
                     cycle <= '0;
                 end
@@ -92,7 +108,11 @@ module controller #(
                 end
 
                 ST_DONE: begin
-                    done  <= 1'b1;
+                    for (int i = 0; i < N; i++) begin
+                        a_drv[i] <= '0;
+                        b_drv[i] <= '0;
+                    end
+                    done  <= 1'b1;  // sticky until next start
                     state <= ST_IDLE;
                 end
             endcase
