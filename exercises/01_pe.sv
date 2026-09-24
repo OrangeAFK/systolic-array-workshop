@@ -1,9 +1,10 @@
 `timescale 1ns / 1ps
 
 // Exercise 1: Implement a single processing element (PE).
-// See docs/02_pe.md for derivation from the dot product.
+// See docs/02_pe.md and docs/contracts.md (en / clear / hold).
 //
-// Test: a = [2, 3, 4], b = [5, 6, 7]  =>  acc = 2*5 + 3*6 + 4*7 = 56
+// Test: a = [2, 3, 4], b = [5, 6, 7] with en=1  =>  acc = 56
+// Also: en=0 must hold; clear zeros acc without full rst.
 // Run:  make -C sim pe PE_SRC=../exercises/01_pe.sv
 
 module pe #(
@@ -12,6 +13,8 @@ module pe #(
 ) (
     input  logic                  clk,
     input  logic                  rst,
+    input  logic                  en,
+    input  logic                  clear,
     input  logic signed [DATA_W-1:0] a_in,
     input  logic signed [DATA_W-1:0] b_in,
     output logic signed [DATA_W-1:0] a_out,
@@ -23,13 +26,14 @@ module pe #(
 
     // TODO: Compute product = a_in * b_in (use $signed for correct int8 multiply).
 
+    // Priority: rst → clear (zero acc) → en MAC+propagate → hold
     always_ff @(posedge clk) begin
         if (rst) begin
             // TODO: Reset a_out, b_out, and acc to zero.
         end else begin
-            // TODO: Pass a_in through to a_out (operand propagation).
-            // TODO: Pass b_in through to b_out (operand propagation).
-            // TODO: Accumulate: acc <= acc + product.
+            // TODO: if (clear) acc <= 0;
+            // TODO: else if (en) acc <= acc + product;
+            // TODO: if (en) propagate a_in→a_out and b_in→b_out; else hold.
         end
     end
 

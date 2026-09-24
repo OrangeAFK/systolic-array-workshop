@@ -1,14 +1,17 @@
 `timescale 1ns / 1ps
 
-// Exercise 3: Add a streaming interface to the systolic array.
-// See docs/01_dataflow.md and the reference rtl/streaming_top.sv.
+// Exercise 3: TPU-shaped streaming wrapper (or implement systolic_core).
+// See docs/contracts.md and rtl/systolic_core.sv / rtl/streaming_top.sv.
 //
-// Your module should:
-//   1. Accept matrix A and B via valid/ready streaming ports (16 int8 values each).
-//   2. Pulse start on the internal top module and wait for done.
-//   3. Stream out matrix C via c_valid/c_data (16 int32 values).
+// Protocol:
+//   1. Stream N*N int8 **weights (B)** on b_* / w_* first.
+//   2. Stream N*N int8 **activations (A)** on a_* (a_ready low while loading W).
+//   3. Explicit start after both buffers full (no auto-start).
+//   4. Stream N*N int32 results on c_valid/c_data with c_ready backpressure
+//      (must stall without dropping beats).
+//   5. done sticky until next start.
 //
-// Run:  make -C sim array  (after completing this exercise)
+// Run:  make -C sim stream
 
 module streaming_top #(
     parameter int N      = 4,
@@ -18,10 +21,12 @@ module streaming_top #(
     input  logic                  clk,
     input  logic                  rst,
 
+    // Activations (A)
     input  logic                  a_valid,
     output logic                  a_ready,
     input  logic signed [DATA_W-1:0] a_data,
 
+    // Weights (B) — stream these first
     input  logic                  b_valid,
     output logic                  b_ready,
     input  logic signed [DATA_W-1:0] b_data,
@@ -30,22 +35,13 @@ module streaming_top #(
     output logic                  done,
 
     output logic                  c_valid,
+    input  logic                  c_ready,
     output logic signed [ACC_W-1:0] c_data
 );
 
-    // TODO: Instantiate top and wire a_load/b_load/c_out arrays.
-
-    // TODO: Implement a state machine with states:
-    //       ST_LOAD_A, ST_LOAD_B, ST_RUN, ST_OUTPUT
-
-    // TODO: In ST_LOAD_A, accept 16 a_data values when a_valid && a_ready.
-
-    // TODO: In ST_LOAD_B, accept 16 b_data values when b_valid && b_ready.
-
-    // TODO: In ST_RUN, pulse core_start when start is asserted; wait for core_done.
-
-    // TODO: In ST_OUTPUT, stream 16 c_data values with c_valid asserted.
-
-    // TODO: Drive a_ready and b_ready based on current state.
+    // TODO: Instantiate systolic_core (or reimplement its FSM) and map:
+    //         b_* → w_t*,  a_* → a_t*,  c_ready → c_tready
+    //
+    // Preferred: thin wrapper — see rtl/streaming_top.sv.
 
 endmodule
