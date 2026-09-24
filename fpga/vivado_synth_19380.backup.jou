@@ -3,8 +3,8 @@
 # SW Build 6140274 on Thu May 22 00:12:29 MDT 2025
 # IP Build 6138677 on Thu May 22 03:10:11 MDT 2025
 # SharedData Build 6139179 on Tue May 20 17:58:58 MDT 2025
-# Start of session at: Thu Sep 24 02:44:24 2026
-# Process ID         : 42420
+# Start of session at: Thu Sep 24 02:42:43 2026
+# Process ID         : 19380
 # Current directory  : C:/Users/onepl/Desktop/systolic-array-workshop
 # Command line       : vivado.exe -mode batch -source scripts\run_synth.tcl -log fpga\vivado_synth.log -journal fpga\vivado_synth.jou
 # Log file           : C:/Users/onepl/Desktop/systolic-array-workshop/fpga/vivado_synth.log
@@ -19,6 +19,6 @@
 # Host memory        : 32980 MB
 # Swap memory        : 11599 MB
 # Total Virtual      : 44580 MB
-# Available Virtual  : 6555 MB
+# Available Virtual  : 6477 MB
 #-----------------------------------------------------------
 source {scripts\run_synth.tcl}
